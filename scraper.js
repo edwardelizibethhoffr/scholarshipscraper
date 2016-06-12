@@ -8,10 +8,10 @@ var mysql =require('mysql');
 var cheerio = require('cheerio');
 
 //Database constants
-const DB_HOST = '';
-const DB_USER = '';
+const DB_HOST = 'localhost';
+const DB_USER = 'root';
 const DB_PASSWORD = '';
-const DB = '';
+const DB = 'helloglasgow';
 
 
 var connection = mysql.createConnection({
@@ -80,14 +80,17 @@ var getScholarshipData = function(url, id, title){
             	desc = h2.first().next('p').next('p').text();            	
             	value = h2.eq(4).next('p').next('p').text();
 
-            	console.log(value);
+            
             	//the date it was last updated
             	var lastUpdateString = $('bh2').find('p').text().substring(0,10);
             	//convert string to date format			
             	date  = convertToDate(lastUpdateString);
             				
             	//pass data to database
-            	databaseUpdate(id, desc, title, date, value);           				
+              if(id != null && title != null && date !=null){
+            	   databaseUpdate(id, desc, title, date, value);  
+              }      
+              	
             }	
     })
 }
@@ -133,7 +136,6 @@ var databaseUpdate = function(id,desc,title,date, value){
 	}
 	});
 }
-
 
 
 app.listen('8081')
