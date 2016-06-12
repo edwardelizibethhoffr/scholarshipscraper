@@ -3,7 +3,7 @@
   "name"         : "ScholarshipScraper",
   "version"      : "0.0.1",
   "description"  : "Scrapes glasgow uni scholarship info",
-  "main"         : "server.js",
+  "main"         : "scraper.js",
   "author"       : "Calum",
   "dependencies" : {
     "express"    : "latest",
