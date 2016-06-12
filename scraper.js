@@ -7,7 +7,7 @@ var app     = express();
 var mysql =require('mysql');
 var cheerio = require('cheerio');
 
-
+//Database constants
 const DB_HOST = '';
 const DB_USER = '';
 const DB_PASSWORD = '';
