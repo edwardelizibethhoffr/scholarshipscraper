@@ -8,10 +8,10 @@ var mysql =require('mysql');
 var cheerio = require('cheerio');
 
 
-const DB_HOST = 'localhost';
-const DB_USER = 'root';
+const DB_HOST = '';
+const DB_USER = '';
 const DB_PASSWORD = '';
-const DB = 'helloglasgow';
+const DB = '';
 
 
 var connection = mysql.createConnection({
@@ -39,7 +39,7 @@ app.get('/', function(req, res){
 
 
             //iterate all of the divs of class 'search-results' and extract the scholaship data
-            $('.search-results').filter(function(){ //.each(function(i,obj){obj
+            $('.search-results').filter(function(){
 
                 	var data = $(this);
 
