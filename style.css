@@ -1,0 +1,50 @@
+*{
+	margin: 0;
+	padding: 0;
+}
+
+html{
+	height: 100%;
+	bottom: 0px;
+}
+body{
+	background-color: #cdced2;
+	margin: 0;
+	padding: 0;
+	height: 100%;
+	top: 0px;
+}
+
+.main{
+	margin-left: 180px;
+	margin-right: 130px;
+}
+
+.main h1 {
+	padding-left: 50px;
+	color : white;
+	padding-top: 20px;
+}
+.side{
+	background: #ededed;
+	width: 15%;
+	position: absolute;
+	height: 17000px;
+}
+
+.heading{	
+	margin-right: 50px;
+	background-color: #2e5c81;
+	padding-bottom: 20px;
+}
+
+.contents{
+	float: right;
+	margin-left: 190px;
+	margin-right: 50px;
+	background-color: white;
+}
+
+.contents td {
+	border: 2px solid black;
+}

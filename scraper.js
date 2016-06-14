@@ -4,61 +4,75 @@
 var express = require('express');
 var request = require('request');
 var app     = express();
-var mysql =require('mysql');
 var cheerio = require('cheerio');
+var mongo = require('mongodb');
+var websocket = require('websocket');
 
-//Database constants
-const DB_HOST = 'localhost';
-const DB_USER = 'root';
-const DB_PASSWORD = '';
-const DB = 'helloglasgow';
+const PORT = 8081;
 
 
-var connection = mysql.createConnection({
-	host : DB_HOST,
-	user: DB_USER,
-	password : DB_PASSWORD,
-	database : DB
+//mongo server
+var Server = mongo.Server, 
+    Db = mongo.Db, 
+    BSON = mongo.BSONPure;
+
+var server = new Server('localhost', 27017, {auto_reconnect: true});
+db = new Db('helloglasgow', server);
+
+//connect to mongodb
+db.open(function(err, db){
+  if(!err){
+    console.log("Connected to 'helloglasgow' database");
+    db.collection('scholarships', {strict:true}, function(err, collection) {
+            if (err) {
+                console.log("The 'scholarships' collection doesn't exist");
+            }
+        });
+  }
 })
 
-connection.connect();
 
-app.get('/', function(req, res){
-
-
+app.get('/getAll', function(req, res){
 	//url to list all scholarships for prospective students
-	url = 'http://www.gla.ac.uk/scholarships/?type=prospective&level=&country=&PGProgrameListSelect=&postgraduate_resarch_programm=&search=Search';
-
+	var url = 'http://www.gla.ac.uk/scholarships/?type=prospective&level=&country=&PGProgrameListSelect=&postgraduate_resarch_programm=&search=Search';
 
     request(url, function(error, response, html){
-        //check to make sure no errors occurred when making the request
+      //check to make sure no errors occurred when making the request
 
-        if(!error){
-            //utilize the cheerio library on the returned html 
-            var $ = cheerio.load(html);
+      if(!error){
+        //utilize the cheerio library on the returned html 
+        var $ = cheerio.load(html);
 
+        //iterate all of the divs of class 'search-results' and extract the scholaship data
+        $('.search-results').filter(function(){
 
-            //iterate all of the divs of class 'search-results' and extract the scholaship data
-            $('.search-results').filter(function(){
+          var data = $(this);
 
-                	var data = $(this);
-
-           			//find the name and id of the scholarship
-           			var scholarshipATag = data.find('a');
-           			var title = scholarshipATag.text();
-           			var scholarshipID = scholarshipATag.attr("href").match(/scholarship_ID=([0-9]+)/)[1];
+          //find the name and id of the scholarship
+          var scholarshipATag = data.find('a');
+          var title = scholarshipATag.text();
+          var scholarshipID = scholarshipATag.attr("href").match(/scholarship_ID=([0-9]+)/)[1];
            			
-           			//the url for this scholarships individual page
-           			var scholarshipHref = scholarshipATag.attr("href");
+          //the url for this scholarships individual page
+          var scholarshipHref = scholarshipATag.attr("href");
            			
 
-           			getScholarshipData(scholarshipHref, scholarshipID, title);   			
+          getScholarshipData(scholarshipHref, scholarshipID, title);   			
 
-            })
-        }
+        })
+      }
     })
-
 })
+
+//returns all course data from database in JSON
+app.get('/getScholarships',function(req,res){
+    db.collection('scholarships', function(err, collection){
+      collection.find().toArray(function(err, items){
+        res.send(items);
+      });
+    });
+});
+
 
 //function retrieves scholarship date from each scholarship's individual webpage
 var getScholarshipData = function(url, id, title){
@@ -88,7 +102,8 @@ var getScholarshipData = function(url, id, title){
             				
             	//pass data to database
               if(id != null && title != null && date !=null){
-            	   databaseUpdate(id, desc, title, date, value);  
+            	   //databaseUpdate(id, desc, title, date, value);
+                 databaseUpdateMongo(id,title,desc,value,date);  
               }      
               	
             }	
@@ -108,41 +123,46 @@ var convertToDate = function(stringIn){
 
 //function checks if the scholarship is already in the database or if it has been updated
 //we then update the database as appropriate
+var databaseUpdateMongo = function(id, title, desc, value, date){
 
-var databaseUpdate = function(id,desc,title,date, value){
+    
+    var cursor = db.collection('scholarships').count({'scholarship_id': id},
+      function(err,results){
+        console.log(results);
+        if(results != 0){
+           var mssg = 'updating ';
+           mssg+= id;
+           console.log(mssg);
+           db.collection('scholarships').find({'scholarship_id':id, 'date':{ $ne:date}}, 
+                function(err,result){
 
-
-	connection.query('SELECT * FROM scholarship WHERE scholarship_id = ?', id, function(err, row){
-		if(err) throw err;
-		else{
-		//if row is not null scholarship is alrady in the database	
-		if(row.length){
-			//check  if our entry is up to date with the website - if not update the row
-			if(row['date'] != date){
-				connection.query('UPDATE scholarship SET name = ?, description = ?, date = ?, value = ?  WHERE scholarship_id = ?', [title, desc, date, id, value],
-					function(err, row){
-						if(err) throw err;
-					});
-
-			}
-		}
-		else{
-			//if row is null - then we have a new scholarship to add to the database
-			connection.query('INSERT INTO scholarship SET ?', {scholarship_id: id, name: title, date: date, description: desc, value: value},
-				function(err, row){
-						if(err) throw err;
-					});
-		}
-	}
-	});
+            console.log(result.date);  
+            db.collection('scholarships').updateOne(
+              {'scholarship_id' : id},
+              {$set: {'title' : title, 'description':desc, 'value' : value,'lastupdated' : date}
+            });
+              })
+        }
+        else{
+          console.log('inserting'); 
+          db.collection('scholarships').insertOne(
+            {
+            'scholarship_id' : id,
+            'title' : title,
+            'description' : desc,
+            'value' : value,
+            'lastupdated' : date
+          });
+        }
+        })   
 }
 
 
-app.listen('8081')
+app.listen(PORT);
 
 console.log('Listening on port 8081');
 
-request('http://localhost:8081', function(error, response, html){});
+//request('http://localhost:8081', function(error, response, html){});
 
 exports = module.exports = app;
 
