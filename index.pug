@@ -1,0 +1,25 @@
+html
+ head
+  title= title
+  link(rel='stylesheet', href='/style.css')
+  <meta http-equiv="refresh" content="30" />
+ body
+  .main
+   .heading
+    h1= heading
+   .side 
+   .contents
+     table
+      td
+        tbody
+          each item in items
+            tr 
+              td
+               strong
+                p= item.title
+               strong
+                | Description: 
+               p= item.description
+               strong
+                | Value:
+               p= item.value
